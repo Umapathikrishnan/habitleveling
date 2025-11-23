@@ -2,9 +2,11 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
   const activeColor = '#6C63FF';
   const inactiveColor = '#888';
 
@@ -17,8 +19,9 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: '#0a0a0a',
           borderTopColor: '#333',
-          height: 60,
-          paddingBottom: 10,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
+          paddingTop: 10,
         },
       }}>
       <Tabs.Screen
@@ -40,6 +43,13 @@ export default function TabLayout() {
         options={{
           title: 'Classic',
           tabBarIcon: ({ color }) => <Ionicons name="timer" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color }) => <Ionicons name="compass" size={24} color={color} />,
         }}
       />
       <Tabs.Screen

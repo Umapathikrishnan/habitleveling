@@ -92,6 +92,12 @@ export default function Workout() {
     const finishWorkout = async () => {
         if (!session) return;
 
+        // Check if all exercises are completed
+        if (plan?.plan_exercises && completedExercises.size < plan.plan_exercises.length) {
+            Alert.alert('Incomplete Workout', 'Please complete all exercises before finishing the workout.');
+            return;
+        }
+
         // Calculate EXP
         let totalExp = 0;
         plan.plan_exercises.forEach((item: any) => {
@@ -135,13 +141,29 @@ export default function Workout() {
                 newExpToNext = Math.floor(newExpToNext * 1.2); // 20% increase per level
             }
 
+            // Check if user already completed a workout today
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const { data: todaysSessions, error: sessionCheckError } = await supabase
+                .from('workout_sessions')
+                .select('id')
+                .eq('user_id', user?.id)
+                .eq('status', 'completed')
+                .gte('ended_at', startOfDay.toISOString())
+                .neq('id', session.id); // Exclude current session
+
+            if (sessionCheckError) throw sessionCheckError;
+
+            const alreadyCompletedToday = todaysSessions && todaysSessions.length > 0;
+
             const { error: updateError } = await supabase
                 .from('profiles')
                 .update({
                     exp: newExp,
                     level: newLevel,
                     exp_to_next_level: newExpToNext,
-                    streak_current: profile.streak_current + 1, // Simple streak increment
+                    streak_current: alreadyCompletedToday ? profile.streak_current : profile.streak_current + 1,
                     updated_at: new Date()
                 })
                 .eq('id', user?.id);
