@@ -4,12 +4,15 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
+import EditProfileModal from '../../components/EditProfileModal';
+
 export default function Profile() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<any>(null);
     const [inventory, setInventory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [editModalVisible, setEditModalVisible] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -63,7 +66,11 @@ export default function Profile() {
         >
             <View style={styles.header}>
                 <View style={styles.avatarContainer}>
-                    <Ionicons name="person" size={40} color="#fff" />
+                    {profile?.avatar_url ? (
+                        <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+                    ) : (
+                        <Ionicons name="person" size={40} color="#fff" />
+                    )}
                 </View>
                 <Text style={styles.username}>{profile?.full_name || 'Hunter'}</Text>
                 <Text style={styles.rank}>{getRankName(profile?.level || 1)}</Text>
@@ -112,7 +119,7 @@ export default function Profile() {
 
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Settings</Text>
-                <TouchableOpacity style={styles.settingRow}>
+                <TouchableOpacity style={styles.settingRow} onPress={() => setEditModalVisible(true)}>
                     <Text style={styles.settingText}>Edit Profile</Text>
                     <Ionicons name="chevron-forward" size={20} color="#666" />
                 </TouchableOpacity>
@@ -124,6 +131,13 @@ export default function Profile() {
                     <Text style={styles.signOutText}>Sign Out</Text>
                 </TouchableOpacity>
             </View>
+
+            <EditProfileModal
+                visible={editModalVisible}
+                onClose={() => setEditModalVisible(false)}
+                profile={profile}
+                onUpdate={fetchData}
+            />
         </ScrollView>
     );
 }
@@ -152,6 +166,11 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         borderWidth: 2,
         borderColor: '#6C63FF',
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
     },
     username: {
         color: '#fff',
