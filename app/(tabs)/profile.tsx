@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, RefreshControl, Modal } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,8 @@ export default function Profile() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [editModalVisible, setEditModalVisible] = useState(false);
+
+    const [settingsVisible, setSettingsVisible] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -58,6 +60,8 @@ export default function Profile() {
         return 'S-Rank';
     };
 
+    const daysOfWeek = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
     return (
         <ScrollView
             style={styles.container}
@@ -65,6 +69,9 @@ export default function Profile() {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
         >
             <View style={styles.header}>
+                <TouchableOpacity style={styles.settingsIcon} onPress={() => setSettingsVisible(true)}>
+                    <Ionicons name="settings-sharp" size={24} color="#fff" />
+                </TouchableOpacity>
                 <View style={styles.avatarContainer}>
                     {profile?.avatar_url ? (
                         <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
@@ -88,6 +95,75 @@ export default function Profile() {
                 <View style={styles.statItem}>
                     <Text style={styles.statValue}>{profile?.exp || 0}</Text>
                     <Text style={styles.statLabel}>EXP</Text>
+                </View>
+            </View>
+
+            {/* Physical Stats Section */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Physical Stats</Text>
+                <View style={styles.gridContainer}>
+                    <View style={styles.gridItem}>
+                        <Ionicons name="body" size={20} color="#6C63FF" />
+                        <Text style={styles.gridValue}>{profile?.height || '--'} cm</Text>
+                        <Text style={styles.gridLabel}>Height</Text>
+                    </View>
+                    <View style={styles.gridItem}>
+                        <Ionicons name="scale" size={20} color="#6C63FF" />
+                        <Text style={styles.gridValue}>{profile?.weight || '--'} kg</Text>
+                        <Text style={styles.gridLabel}>Weight</Text>
+                    </View>
+                    <View style={styles.gridItem}>
+                        <Ionicons name="calendar" size={20} color="#6C63FF" />
+                        <Text style={styles.gridValue}>{profile?.age || '--'}</Text>
+                        <Text style={styles.gridLabel}>Age</Text>
+                    </View>
+                    <View style={styles.gridItem}>
+                        <Ionicons name="male-female" size={20} color="#6C63FF" />
+                        <Text style={styles.gridValue}>{profile?.gender || '--'}</Text>
+                        <Text style={styles.gridLabel}>Gender</Text>
+                    </View>
+                </View>
+            </View>
+
+            {/* Fitness Profile Section */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Fitness Profile</Text>
+                <View style={styles.cardRow}>
+                    <View style={styles.card}>
+                        <Ionicons name="fitness" size={24} color="#f1c40f" />
+                        <Text style={styles.cardLabel}>Focus Area</Text>
+                        <Text style={styles.cardValue}>{profile?.focus_area || 'Not Set'}</Text>
+                    </View>
+                    <View style={styles.card}>
+                        <Ionicons name="pulse" size={24} color="#e74c3c" />
+                        <Text style={styles.cardLabel}>Activity Level</Text>
+                        <Text style={styles.cardValue}>{profile?.activity_level || 'Not Set'}</Text>
+                    </View>
+                </View>
+            </View>
+
+            {/* Workout Schedule Section */}
+            <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Schedule</Text>
+                    {profile?.workout_time && (
+                        <View style={styles.timeTag}>
+                            <Ionicons name="time" size={14} color="#fff" />
+                            <Text style={styles.timeText}>{profile.workout_time}</Text>
+                        </View>
+                    )}
+                </View>
+                <View style={styles.daysContainer}>
+                    {daysOfWeek.map((day) => {
+                        const isSelected = profile?.workout_days?.includes(day);
+                        return (
+                            <View key={day} style={[styles.dayCircle, isSelected && styles.dayCircleActive]}>
+                                <Text style={[styles.dayText, isSelected && styles.dayTextActive]}>
+                                    {day.charAt(0)}
+                                </Text>
+                            </View>
+                        );
+                    })}
                 </View>
             </View>
 
@@ -117,20 +193,34 @@ export default function Profile() {
                 )}
             </View>
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Settings</Text>
-                <TouchableOpacity style={styles.settingRow} onPress={() => setEditModalVisible(true)}>
-                    <Text style={styles.settingText}>Edit Profile</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#666" />
+            <Modal
+                visible={settingsVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setSettingsVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setSettingsVisible(false)}
+                >
+                    <View style={styles.sidebar}>
+                        <Text style={styles.sidebarTitle}>Settings</Text>
+                        <TouchableOpacity style={styles.sidebarItem} onPress={() => { setSettingsVisible(false); setEditModalVisible(true); }}>
+                            <Ionicons name="person-outline" size={20} color="#fff" />
+                            <Text style={styles.sidebarItemText}>Edit Profile</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.sidebarItem}>
+                            <Ionicons name="notifications-outline" size={20} color="#fff" />
+                            <Text style={styles.sidebarItemText}>Notifications</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.sidebarItem} onPress={handleSignOut}>
+                            <Ionicons name="log-out-outline" size={20} color="#e74c3c" />
+                            <Text style={styles.sidebarItemTextDestructive}>Sign Out</Text>
+                        </TouchableOpacity>
+                    </View>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.settingRow}>
-                    <Text style={styles.settingText}>Notifications</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#666" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-                    <Text style={styles.signOutText}>Sign Out</Text>
-                </TouchableOpacity>
-            </View>
+            </Modal>
 
             <EditProfileModal
                 visible={editModalVisible}
@@ -155,6 +245,14 @@ const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 30,
+        width: '100%',
+    },
+    settingsIcon: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        padding: 10,
+        zIndex: 10,
     },
     avatarContainer: {
         width: 80,
@@ -210,11 +308,108 @@ const styles = StyleSheet.create({
     section: {
         marginBottom: 30,
     },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
     sectionTitle: {
         color: '#fff',
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 15,
+    },
+    gridContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    gridItem: {
+        width: '48%',
+        backgroundColor: '#1a1a1a',
+        padding: 15,
+        borderRadius: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#333',
+    },
+    gridValue: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginTop: 8,
+        marginBottom: 4,
+    },
+    gridLabel: {
+        color: '#888',
+        fontSize: 12,
+    },
+    cardRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    card: {
+        flex: 1,
+        backgroundColor: '#1a1a1a',
+        padding: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#333',
+        alignItems: 'flex-start',
+    },
+    cardLabel: {
+        color: '#888',
+        fontSize: 12,
+        marginTop: 8,
+        marginBottom: 4,
+    },
+    cardValue: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    timeTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#6C63FF',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 12,
+        gap: 5,
+    },
+    timeText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    daysContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        backgroundColor: '#1a1a1a',
+        padding: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#333',
+    },
+    dayCircle: {
+        width: 35,
+        height: 35,
+        borderRadius: 17.5,
+        backgroundColor: '#333',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    dayCircleActive: {
+        backgroundColor: '#6C63FF',
+    },
+    dayText: {
+        color: '#888',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    dayTextActive: {
+        color: '#fff',
     },
     emptyText: {
         color: '#666',
@@ -261,26 +456,43 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
     },
-    settingRow: {
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'flex-end',
         flexDirection: 'row',
-        justifyContent: 'space-between',
+    },
+    sidebar: {
+        width: '70%',
+        backgroundColor: '#1a1a1a',
+        height: '100%',
+        padding: 20,
+        paddingTop: 60,
+        borderLeftWidth: 1,
+        borderLeftColor: '#333',
+    },
+    sidebarTitle: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 30,
+    },
+    sidebarItem: {
+        flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#333',
     },
-    settingText: {
-        color: '#ccc',
+    sidebarItemText: {
+        color: '#fff',
         fontSize: 16,
+        marginLeft: 15,
     },
-    signOutButton: {
-        marginTop: 20,
-        paddingVertical: 15,
-        alignItems: 'center',
-    },
-    signOutText: {
+    sidebarItemTextDestructive: {
         color: '#e74c3c',
         fontSize: 16,
+        marginLeft: 15,
         fontWeight: 'bold',
     },
 });
