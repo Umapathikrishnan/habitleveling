@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { calculateExp } from '../../lib/workout-logic';
+import WorkoutSuccessModal from '../../components/WorkoutSuccessModal';
 
 export default function Workout() {
     const { user } = useAuth();
@@ -15,6 +16,9 @@ export default function Workout() {
     const [completedExercises, setCompletedExercises] = useState<Set<string>>(new Set());
     const [showCompletionModal, setShowCompletionModal] = useState(false);
     const [earnedExp, setEarnedExp] = useState(0);
+    const [isLevelUp, setIsLevelUp] = useState(false);
+    const [newLevel, setNewLevel] = useState(1);
+    const [streak, setStreak] = useState(0);
 
     useEffect(() => {
         fetchPlan();
@@ -170,7 +174,12 @@ export default function Workout() {
 
             if (updateError) throw updateError;
 
+            if (updateError) throw updateError;
+
             setEarnedExp(totalExp);
+            setIsLevelUp(newLevel > profile.level);
+            setNewLevel(newLevel);
+            setStreak(alreadyCompletedToday ? profile.streak_current : profile.streak_current + 1);
             setShowCompletionModal(true);
             setSession(null);
             setCompletedExercises(new Set());
@@ -244,24 +253,17 @@ export default function Workout() {
                 )}
             </View>
 
-            <Modal visible={showCompletionModal} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Ionicons name="trophy" size={60} color="#f1c40f" />
-                        <Text style={styles.modalTitle}>WORKOUT COMPLETE!</Text>
-                        <Text style={styles.modalExp}>+{earnedExp} EXP</Text>
-                        <TouchableOpacity
-                            style={styles.closeButton}
-                            onPress={() => {
-                                setShowCompletionModal(false);
-                                router.replace('/(tabs)');
-                            }}
-                        >
-                            <Text style={styles.closeButtonText}>CONTINUE</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+            <WorkoutSuccessModal
+                visible={showCompletionModal}
+                onClose={() => {
+                    setShowCompletionModal(false);
+                    router.replace('/(tabs)');
+                }}
+                expEarned={earnedExp}
+                levelUp={isLevelUp}
+                newLevel={newLevel}
+                streak={streak}
+            />
         </View>
     );
 }

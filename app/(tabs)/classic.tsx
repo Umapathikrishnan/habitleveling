@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { calculateExp } from '../../lib/workout-logic';
+import WorkoutSuccessModal from '../../components/WorkoutSuccessModal';
 
 export default function ClassicMode() {
     const { user } = useAuth();
@@ -15,6 +16,9 @@ export default function ClassicMode() {
     const [timer, setTimer] = useState(0);
     const [showCompletion, setShowCompletion] = useState(false);
     const [earnedExp, setEarnedExp] = useState(0);
+    const [isLevelUp, setIsLevelUp] = useState(false);
+    const [newLevel, setNewLevel] = useState(1);
+    const [streak, setStreak] = useState(0);
 
     useEffect(() => {
         fetchExercises();
@@ -82,6 +86,24 @@ export default function ClassicMode() {
                     level: newLevel,
                     exp_to_next_level: newExpToNext
                 }).eq('id', user?.id);
+
+                setIsLevelUp(newLevel > profile.level);
+                setNewLevel(newLevel);
+                // Note: Classic mode might not affect streak in the same way, but let's assume it does or just pass 0 if not tracked here.
+                // For consistency, let's fetch streak or just default to current.
+                // Since we didn't fetch streak in the select above, let's just pass 0 or update logic to fetch it.
+                // Ideally we should fetch streak too.
+            }
+
+            // Let's update the select to include streak_current
+            const { data: streakData } = await supabase
+                .from('profiles')
+                .select('streak_current')
+                .eq('id', user?.id)
+                .single();
+
+            if (streakData) {
+                setStreak(streakData.streak_current);
             }
 
             setShowCompletion(true);
@@ -162,24 +184,17 @@ export default function ClassicMode() {
                 </View>
             )}
 
-            <Modal visible={showCompletion} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Ionicons name="star" size={60} color="#f1c40f" />
-                        <Text style={styles.modalTitle}>TRAINING COMPLETE</Text>
-                        <Text style={styles.modalExp}>+{earnedExp} EXP</Text>
-                        <TouchableOpacity
-                            style={styles.closeButton}
-                            onPress={() => {
-                                setShowCompletion(false);
-                                setSelectedExercise(null);
-                            }}
-                        >
-                            <Text style={styles.closeButtonText}>CLOSE</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+            <WorkoutSuccessModal
+                visible={showCompletion}
+                onClose={() => {
+                    setShowCompletion(false);
+                    setSelectedExercise(null);
+                }}
+                expEarned={earnedExp}
+                levelUp={isLevelUp}
+                newLevel={newLevel}
+                streak={streak}
+            />
         </View>
     );
 }
