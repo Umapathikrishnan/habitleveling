@@ -19,6 +19,7 @@ export default function Workout() {
     const [isLevelUp, setIsLevelUp] = useState(false);
     const [newLevel, setNewLevel] = useState(1);
     const [streak, setStreak] = useState(0);
+    const [isRepeat, setIsRepeat] = useState(false);
 
     useEffect(() => {
         fetchPlan();
@@ -111,6 +112,27 @@ export default function Workout() {
         });
 
         try {
+            // Check if user already completed a workout today
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const { data: todaysSessions, error: sessionCheckError } = await supabase
+                .from('workout_sessions')
+                .select('id')
+                .eq('user_id', user?.id)
+                .eq('status', 'completed')
+                .gte('ended_at', startOfDay.toISOString())
+                .neq('id', session.id); // Exclude current session
+
+            if (sessionCheckError) throw sessionCheckError;
+
+            const alreadyCompletedToday = todaysSessions && todaysSessions.length > 0;
+
+            // If already completed today, set EXP to 0
+            if (alreadyCompletedToday) {
+                totalExp = 0;
+            }
+
             // Update session
             const { error: sessionError } = await supabase
                 .from('workout_sessions')
@@ -145,22 +167,6 @@ export default function Workout() {
                 newExpToNext = Math.floor(newExpToNext * 1.2); // 20% increase per level
             }
 
-            // Check if user already completed a workout today
-            const startOfDay = new Date();
-            startOfDay.setHours(0, 0, 0, 0);
-
-            const { data: todaysSessions, error: sessionCheckError } = await supabase
-                .from('workout_sessions')
-                .select('id')
-                .eq('user_id', user?.id)
-                .eq('status', 'completed')
-                .gte('ended_at', startOfDay.toISOString())
-                .neq('id', session.id); // Exclude current session
-
-            if (sessionCheckError) throw sessionCheckError;
-
-            const alreadyCompletedToday = todaysSessions && todaysSessions.length > 0;
-
             const { error: updateError } = await supabase
                 .from('profiles')
                 .update({
@@ -174,12 +180,11 @@ export default function Workout() {
 
             if (updateError) throw updateError;
 
-            if (updateError) throw updateError;
-
             setEarnedExp(totalExp);
             setIsLevelUp(newLevel > profile.level);
             setNewLevel(newLevel);
             setStreak(alreadyCompletedToday ? profile.streak_current : profile.streak_current + 1);
+            setIsRepeat(alreadyCompletedToday || false);
             setShowCompletionModal(true);
             setSession(null);
             setCompletedExercises(new Set());
@@ -263,6 +268,7 @@ export default function Workout() {
                 levelUp={isLevelUp}
                 newLevel={newLevel}
                 streak={streak}
+                isRepeat={isRepeat}
             />
         </View>
     );
