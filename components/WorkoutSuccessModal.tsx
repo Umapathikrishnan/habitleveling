@@ -20,6 +20,7 @@ interface WorkoutSuccessModalProps {
     levelUp?: boolean;
     newLevel?: number;
     streak?: number;
+    isRepeat?: boolean;
 }
 
 export default function WorkoutSuccessModal({
@@ -28,7 +29,8 @@ export default function WorkoutSuccessModal({
     expEarned,
     levelUp = false,
     newLevel = 1,
-    streak = 0
+    streak = 0,
+    isRepeat = false
 }: WorkoutSuccessModalProps) {
     // Animation values
     const scale = useSharedValue(0);
@@ -111,6 +113,9 @@ export default function WorkoutSuccessModal({
                         <Animated.View style={[styles.statContainer, expStyle]}>
                             <Text style={styles.statLabel}>EXP EARNED</Text>
                             <Text style={styles.expValue}>+{expEarned}</Text>
+                            {isRepeat && (
+                                <Text style={styles.repeatText}>Daily Limit Reached! Rest up for tomorrow.</Text>
+                            )}
                         </Animated.View>
 
                         {/* Level Up Badge */}
@@ -217,6 +222,13 @@ const styles = StyleSheet.create({
         textShadowColor: 'rgba(241, 196, 15, 0.3)',
         textShadowOffset: { width: 0, height: 4 },
         textShadowRadius: 10,
+    },
+    repeatText: {
+        color: '#888',
+        fontSize: 14,
+        marginTop: 10,
+        fontStyle: 'italic',
+        textAlign: 'center',
     },
     levelUpContainer: {
         marginBottom: 20,
